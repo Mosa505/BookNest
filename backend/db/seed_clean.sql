@@ -63,3 +63,13 @@ INSERT INTO achievements (name, description, badge_color, criteria_json) VALUES
 ('Story Explorer', 'Read 3 kids books', '#32CD32', '{"type":"book_completed","category":"Kids","count":3}'),
 ('Super Reader', 'Read 5 kids books', '#FF1493', '{"type":"book_completed","category":"Kids","count":5}')
 ON CONFLICT DO NOTHING;
+
+-- Insert admin user (password: admin123 - bcrypt hash)
+INSERT INTO auth_users (email, password_hash, full_name, is_admin) VALUES
+('admin@booknest.com', '$2a$10$YourBcryptHashHere', 'Admin User', TRUE)
+ON CONFLICT DO NOTHING;
+
+-- Insert demo user (password: demo123)
+INSERT INTO auth_users (email, password_hash, full_name) VALUES
+('demo@booknest.com', '$2a$10$YourBcryptHashHere', 'Demo User')
+ON CONFLICT DO NOTHING;

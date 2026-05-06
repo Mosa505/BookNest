@@ -16,6 +16,7 @@ const specialFeatures = [
     description: 'Engaging stories with fun illustrations that bring reading to life.',
     gradient: 'from-pink-100 to-pink-200',
     border: 'border-pink-200',
+    link: '/kids',
   },
   {
     emoji: '🎮',
@@ -23,6 +24,7 @@ const specialFeatures = [
     description: 'Play exciting quizzes after each story to test comprehension.',
     gradient: 'from-purple-100 to-purple-200',
     border: 'border-purple-200',
+    link: '/kids#books',
   },
   {
     emoji: '⭐',
@@ -30,6 +32,7 @@ const specialFeatures = [
     description: 'Collect stars and badges as you read more stories.',
     gradient: 'from-yellow-100 to-amber-200',
     border: 'border-yellow-200',
+    link: '/kids/badges',
   },
   {
     emoji: '📝',
@@ -37,6 +40,7 @@ const specialFeatures = [
     description: 'Write down your favorite parts and new words you learn.',
     gradient: 'from-green-100 to-emerald-200',
     border: 'border-green-200',
+    link: '/kids#notes',
   },
 ]
 
@@ -44,16 +48,17 @@ export default function KidsPage() {
   const [books, setBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedAge, setSelectedAge] = useState(null)
+  const [achievements, setAchievements] = useState([])
+  const [showRewards, setShowRewards] = useState(false)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const result = await booksService.getAll({ category: 'Kids', limit: 20 })
+        const result = await booksService.getKidsBooks(selectedAge)
         setBooks(result.data || [])
       } catch {
-        // Try fetching all and filter for simple/easy books
         try {
-          const result = await booksService.getAll({ difficulty: 'A1', limit: 20 })
+          const result = await booksService.getAll({ category: 'Kids', limit: 20 })
           setBooks(result.data || [])
         } catch {
           // Silent fail
@@ -63,6 +68,18 @@ export default function KidsPage() {
       }
     }
     fetchData()
+  }, [selectedAge])
+
+  useEffect(() => {
+    async function fetchAchievements() {
+      try {
+        const result = await achievementsService.getKidsAchievements()
+        setAchievements(result)
+      } catch {
+        // Silent fail
+      }
+    }
+    fetchAchievements()
   }, [])
 
   // Divide books into sections
@@ -108,7 +125,7 @@ export default function KidsPage() {
               {ageGroups.map((group) => (
                 <button
                   key={group.label}
-                  onClick={() => setSelectedAge(selectedAge === group.label ? null : group.label)}
+                  onClick={() => setSelectedAge(group.label)}
                   className={`px-8 py-3.5 rounded-2xl font-bold text-lg transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 ${
                     selectedAge === group.label
                       ? `bg-gradient-to-r ${group.color} text-white scale-105`
@@ -118,6 +135,14 @@ export default function KidsPage() {
                   Ages {group.label}
                 </button>
               ))}
+              {selectedAge && (
+                <button
+                  onClick={() => setSelectedAge(null)}
+                  className="px-6 py-3.5 rounded-2xl font-bold text-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all"
+                >
+                  Show All
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -134,14 +159,15 @@ export default function KidsPage() {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {specialFeatures.map((feature, idx) => (
-              <div
+              <Link
                 key={idx}
-                className={`p-6 rounded-2xl bg-gradient-to-br ${feature.gradient} border ${feature.border} hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-center`}
+                to={feature.link}
+                className={`block p-6 rounded-3xl bg-gradient-to-br ${feature.gradient} border-4 ${feature.border} hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 text-center hover:scale-105`}
               >
-                <span className="text-4xl block mb-3">{feature.emoji}</span>
-                <h3 className="text-base font-bold font-heading text-brand-900 mb-2">{feature.title}</h3>
+                <span className="text-6xl block mb-3 animate-bounce-slow">{feature.emoji}</span>
+                <h3 className="text-lg font-bold font-heading text-brand-900 mb-2">{feature.title}</h3>
                 <p className="text-sm text-brand-600 leading-relaxed">{feature.description}</p>
-              </div>
+              </Link>
             ))}
           </div>
         </div>
@@ -198,6 +224,44 @@ export default function KidsPage() {
         </div>
       </section>
 
+      {/* Rewards Section */}
+      <section className="py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">⭐</span>
+              <h2 className="text-2xl md:text-3xl font-bold font-heading text-brand-900">My Rewards</h2>
+            </div>
+            <button
+              onClick={() => setShowRewards(!showRewards)}
+              className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded-xl font-bold hover:bg-yellow-200 transition-colors"
+            >
+              {showRewards ? 'Hide' : 'Show All'}
+            </button>
+          </div>
+
+          {showRewards && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {achievements.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className="p-4 rounded-2xl bg-gradient-to-br from-yellow-50 to-amber-50 border-2 border-yellow-200 text-center hover:scale-105 transition-transform cursor-pointer"
+                >
+                  <div className="text-4xl mb-2">🏆</div>
+                  <h4 className="font-bold text-sm text-brand-900">{achievement.name}</h4>
+                  <p className="text-xs text-brand-500 mt-1">{achievement.description}</p>
+                </div>
+              ))}
+              {achievements.length === 0 && (
+                <div className="col-span-full text-center py-8">
+                  <p className="text-brand-500">Complete quizzes and read books to earn rewards!</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Reading Adventure CTA */}
       <section className="py-16 mb-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -216,8 +280,8 @@ export default function KidsPage() {
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 {[
-                  { emoji: '📖', value: '12 Stories', label: 'Available' },
-                  { emoji: '⭐', value: '5 Badges', label: 'To Earn' },
+                  { emoji: '📖', value: `${books.length} Stories`, label: 'Available' },
+                  { emoji: '⭐', value: `${achievements.length} Badges`, label: 'To Earn' },
                   { emoji: '🎯', value: 'Fun Quizzes', label: 'To Play' },
                 ].map((item, idx) => (
                   <div key={idx} className="px-6 py-4 bg-white/20 rounded-2xl backdrop-blur-sm">
@@ -228,9 +292,9 @@ export default function KidsPage() {
                 ))}
               </div>
               <div className="mt-8 flex flex-col items-center gap-2">
-                <Link to="/books">
+                <Link to="/kids/badges">
                   <button className="px-8 py-3 bg-white text-pink-600 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all">
-                    Start Reading & Have Fun! 🎉
+                    View All Badges! 🏆
                   </button>
                 </Link>
                 {/* Social-like icons */}
@@ -256,30 +320,49 @@ function KidsBookCard({ book, variant = 'pink' }) {
   const bgColor = variant === 'purple' ? 'bg-purple-50' : 'bg-pink-50'
 
   return (
-    <Link
-      to={`/books/${book.id}`}
-      className={`group block rounded-2xl border-2 ${borderColor} ${bgColor} shadow-sm hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1`}
-    >
-      <div className="aspect-[3/4] overflow-hidden">
-        <img
-          src={coverUrl}
-          alt={book.title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-        />
+    <div className={`group block rounded-2xl border-2 ${borderColor} ${bgColor} shadow-sm hover:shadow-lg overflow-hidden transition-all duration-300 hover:-translate-y-1`}>
+      <Link to={`/kids/books/${book.id}/read`} className="block">
+        <div className="aspect-[3/4] overflow-hidden">
+          <img
+            src={coverUrl}
+            alt={book.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        </div>
+        <div className="p-3">
+          <h4 className="font-heading font-bold text-sm text-brand-900 truncate group-hover:text-pink-600 transition-colors">
+            {book.title}
+          </h4>
+          <p className="text-xs text-brand-500 mt-0.5 truncate">{book.author}</p>
+          {book.rating && (
+            <div className="flex items-center gap-1 mt-2">
+              <span className="text-yellow-400 text-xs">⭐</span>
+              <span className="text-xs font-medium text-brand-600">{book.rating.toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+      </Link>
+      <div className="px-3 pb-3 flex gap-2">
+        <Link
+          to={`/kids/books/${book.id}/read`}
+          className="flex-1 text-center py-1.5 bg-pink-100 text-pink-700 rounded-lg text-xs font-bold hover:bg-pink-200 transition-colors"
+        >
+          📖 Read
+        </Link>
+        <Link
+          to={`/kids/books/${book.id}/quiz`}
+          className="flex-1 text-center py-1.5 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold hover:bg-purple-200 transition-colors"
+        >
+          🎮 Quiz
+        </Link>
+        <Link
+          to={`/kids/books/${book.id}/notes`}
+          className="flex-1 text-center py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-bold hover:bg-green-200 transition-colors"
+        >
+          📝 Note
+        </Link>
       </div>
-      <div className="p-3">
-        <h4 className="font-heading font-bold text-sm text-brand-900 truncate group-hover:text-pink-600 transition-colors">
-          {book.title}
-        </h4>
-        <p className="text-xs text-brand-500 mt-0.5 truncate">{book.author}</p>
-        {book.rating && (
-          <div className="flex items-center gap-1 mt-2">
-            <span className="text-yellow-400 text-xs">⭐</span>
-            <span className="text-xs font-medium text-brand-600">{book.rating.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
-    </Link>
+    </div>
   )
 }

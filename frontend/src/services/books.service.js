@@ -45,4 +45,13 @@ export const booksService = {
     const { data } = await api.delete(`/api/books/${id}/delete-file/${type}`)
     return data
   },
+
+  async getKidsBooks(ageGroup = null) {
+    const params = { category: 'Kids', limit: 20 }
+    if (ageGroup) {
+      params.age_group = ageGroup
+    }
+    const { data } = await api.get('/api/books', { params })
+    return data
+  },
 }

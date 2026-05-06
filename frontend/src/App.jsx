@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 import AppLayout from './components/layout/AppLayout'
 import AuthLayout from './components/layout/AuthLayout'
@@ -25,9 +25,15 @@ import AdminUsers from './pages/admin/AdminUsers'
 import NotFound from './pages/NotFound'
 // New pages
 import KidsPage from './pages/kids/KidsPage'
+import KidsQuizPage from './pages/kids/KidsQuizPage'
+import KidsQuizResults from './pages/kids/KidsQuizResults'
+import KidsNotesPage from './pages/kids/KidsNotesPage'
+import KidsBadgesPage from './pages/kids/KidsBadgesPage'
+import KidsBookReaderPage from './pages/kids/KidsBookReaderPage'
 import CategoriesPage from './pages/categories/CategoriesPage'
 import LearnLanguagePage from './pages/language/LearnLanguagePage'
 import AboutPage from './pages/about/AboutPage'
+import KidsNavigation from './components/kids/KidsNavigation'
 import { useSessionTracker } from './hooks/useSessionTracker'
 
 function SessionTrackerWrapper() {
@@ -37,9 +43,13 @@ function SessionTrackerWrapper() {
 }
 
 export default function App() {
+  const location = useLocation()
+  const isKidsPage = location.pathname.startsWith('/kids')
+
   return (
     <>
       <SessionTrackerWrapper />
+      <KidsNavigation />
       <Routes>
       {/* Public routes */}
       <Route path="/" element={<LandingPage />} />
@@ -67,9 +77,14 @@ export default function App() {
         <Route path="/about" element={<AboutPage />} />
       </Route>
 
-      {/* Kids route - within app layout for authenticated users */}
+      {/* Kids routes - within app layout for authenticated users */}
       <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
         <Route path="/kids" element={<KidsPage />} />
+        <Route path="/kids/books/:id/read" element={<KidsBookReaderPage />} />
+        <Route path="/kids/books/:id/quiz" element={<KidsQuizPage />} />
+        <Route path="/kids/books/:id/quiz/results" element={<KidsQuizResults />} />
+        <Route path="/kids/books/:id/notes" element={<KidsNotesPage />} />
+        <Route path="/kids/badges" element={<KidsBadgesPage />} />
       </Route>
 
       {/* Admin routes */}
@@ -82,6 +97,7 @@ export default function App() {
       {/* 404 */}
       <Route path="*" element={<NotFound />} />
     </Routes>
+    {isKidsPage && <div className="h-20" />}
     </>
   )
 }

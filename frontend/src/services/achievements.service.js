@@ -1,23 +1,18 @@
 import api from './api'
 
 export const achievementsService = {
-  async getAll() {
-    const { data } = await api.get('/api/achievements')
-    return data.data
-  },
-
-  async getById(id) {
-    const { data } = await api.get(`/api/achievements/${id}`)
-    return data.data
-  },
-
   async getUserAchievements() {
-    const { data } = await api.get('/api/achievements/user/achievements')
-    return data
+    const { data } = await api.get('/api/achievements/user')
+    return data.data || []
   },
 
-  async check(bookId) {
-    const { data } = await api.post(`/api/achievements/check/${bookId}`)
-    return data
+  async getAvailableAchievements() {
+    const { data } = await api.get('/api/achievements')
+    return data.data || []
+  },
+
+  async getKidsAchievements() {
+    const { data } = await api.get('/api/achievements', { params: { category: 'Kids' } })
+    return data.data || []
   },
 }

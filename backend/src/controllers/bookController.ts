@@ -25,12 +25,13 @@ export const uploadContent = upload.single('content')
 
 export const getBooks = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { category, difficulty, search, limit = 20, offset = 0 } = req.query
+    const { category, difficulty, age_group, search, limit = 20, offset = 0 } = req.query
 
     let query = supabaseAdmin.from('books').select('*', { count: 'exact' })
 
     if (category) query = query.eq('category', category as string)
     if (difficulty) query = query.eq('difficulty', difficulty as string)
+    if (age_group) query = query.eq('age_group', age_group as string)
     if (search) {
       query = query.or(`title.ilike.*${search}*,author.ilike.*${search}*,description.ilike.*${search}*`)
     }

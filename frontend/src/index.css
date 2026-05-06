@@ -54,14 +54,81 @@
   .kids-theme {
     --color-primary: #ec4899;
     --color-primary-light: #fce7f3;
+    font-family: 'Comic Neue', cursive;
+  }
+
+  .kids-theme h1,
+  .kids-theme h2,
+  .kids-theme h3,
+  .kids-theme h4,
+  .kids-theme h5,
+  .kids-theme h6 {
+    font-family: 'Comic Neue', cursive;
   }
 
   .kids-theme .btn-primary {
-    @apply bg-pink-500 hover:bg-pink-600 focus:ring-pink-300;
+    @apply bg-pink-500 hover:bg-pink-600 focus:ring-pink-300 rounded-2xl text-lg py-3 px-6;
   }
 
   .kids-theme .btn-secondary {
-    @apply border-pink-300 text-pink-700 hover:bg-pink-50 focus:ring-pink-300;
+    @apply border-pink-300 text-pink-700 hover:bg-pink-50 focus:ring-pink-300 rounded-2xl;
+  }
+
+  .kids-theme .card {
+    @apply rounded-3xl border-4 shadow-2xl;
+  }
+
+  /* Kids decorative elements */
+  .kids-theme::before {
+    content: '🌟';
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    font-size: 2rem;
+    animation: float 3s ease-in-out infinite;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .kids-theme::after {
+    content: '✨';
+    position: fixed;
+    top: 60px;
+    left: 20px;
+    font-size: 1.5rem;
+    animation: float 4s ease-in-out infinite;
+    animation-delay: 1s;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+  }
+
+  @keyframes bounce-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  .animate-bounce-slow {
+    animation: bounce-slow 2s ease-in-out infinite;
+  }
+
+  @keyframes confetti-fall {
+    0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+
+  .confetti {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    top: -10px;
+    animation: confetti-fall 3s linear forwards;
+    z-index: 9999;
+    pointer-events: none;
   }
 }
 

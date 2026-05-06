@@ -20,8 +20,13 @@ export default function BookReaderPage() {
     async function fetchBook() {
       try {
         const data = await booksService.getById(id)
-        if (!data?.content_url) {
-          setError('This book has no PDF content available.')
+        if (!data) {
+          setError('Book not found')
+        } else if (data.content) {
+          // Kids book with text content - redirect to kids reader
+          navigate(`/kids/books/${id}/read`)
+        } else if (!data?.content_url) {
+          setError('This book has no content available.')
         } else {
           setBook(data)
           reader.setTotalPages(data.total_pages || 0)
@@ -33,7 +38,7 @@ export default function BookReaderPage() {
       }
     }
     fetchBook()
-  }, [id, reader])
+  }, [id, reader, navigate])
 
   if (loading) {
     return (
