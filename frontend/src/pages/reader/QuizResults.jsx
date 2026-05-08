@@ -9,28 +9,41 @@ export default function QuizResults() {
   const [searchParams] = useSearchParams()
   const [newAchievements, setNewAchievements] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const score = parseFloat(searchParams.get('score') || '0')
   const total = parseInt(searchParams.get('total') || '0')
   const passed = score >= 70
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const achievementData = await achievementsService.check(id)
-        setNewAchievements(achievementData?.newAchievements || [])
-      } catch {
-        // Achievements check is optional
-      }
-      setLoading(false)
+  async function fetchAchievements() {
+    setLoading(true)
+    setError(null)
+    try {
+      const achievementData = await achievementsService.check(id)
+      setNewAchievements(achievementData?.newAchievements || [])
+    } catch {
+      setError('Failed to load achievements')
     }
-    fetchData()
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    fetchAchievements()
   }, [id])
 
   if (loading) {
     return (
       <div className="flex justify-center py-20">
         <Spinner size="lg" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-sm text-red-600">{error}</p>
+        <Button size="sm" onClick={fetchAchievements}>Retry</Button>
       </div>
     )
   }

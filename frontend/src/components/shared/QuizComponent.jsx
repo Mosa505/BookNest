@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import Button from '../ui/Button'
 import ProgressBar from '../ui/ProgressBar'
+import Spinner from '../ui/Spinner'
 
-export default function QuizComponent({ questions, onSubmit, bookTitle }) {
+export default function QuizComponent({ questions, onSubmit, bookTitle, submitting }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState({})
   const [showResult, setShowResult] = useState(false)
@@ -11,6 +12,7 @@ export default function QuizComponent({ questions, onSubmit, bookTitle }) {
   const progress = ((currentIndex + 1) / questions.length) * 100
 
   function handleSelect(answer) {
+    if (submitting) return
     setAnswers((prev) => ({ ...prev, [currentIndex]: answer }))
   }
 
@@ -43,7 +45,7 @@ export default function QuizComponent({ questions, onSubmit, bookTitle }) {
     setShowResult(true)
   }
 
-  if (showResult) return null
+  if (showResult && !submitting) return null
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -59,7 +61,14 @@ export default function QuizComponent({ questions, onSubmit, bookTitle }) {
         <ProgressBar value={progress} max={100} showLabel />
       </div>
 
-      <div className="bg-white rounded-xl border border-brand-200 shadow-card p-6">
+      <div className="bg-white rounded-xl border border-brand-200 shadow-card p-6 relative">
+        {submitting && (
+          <div className="absolute inset-0 bg-white/80 rounded-xl flex flex-col items-center justify-center z-10">
+            <Spinner size="lg" />
+            <p className="mt-3 text-sm text-brand-600 font-medium">Submitting your answers...</p>
+          </div>
+        )}
+
         <p className="text-lg font-medium text-brand-900 mb-6">{current.question}</p>
 
         <div className="space-y-3 mb-8">
@@ -70,6 +79,7 @@ export default function QuizComponent({ questions, onSubmit, bookTitle }) {
               <button
                 key={idx}
                 onClick={() => handleSelect(option)}
+                disabled={submitting}
                 className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
                   isSelected
                     ? 'border-brand-500 bg-brand-50 text-brand-900'
@@ -89,13 +99,14 @@ export default function QuizComponent({ questions, onSubmit, bookTitle }) {
           <Button
             variant="secondary"
             onClick={handlePrev}
-            disabled={currentIndex === 0}
+            disabled={currentIndex === 0 || submitting}
           >
             Previous
           </Button>
           <Button
             onClick={handleNext}
-            disabled={!answers[currentIndex]}
+            disabled={!answers[currentIndex] || submitting}
+            loading={submitting && currentIndex === questions.length - 1}
           >
             {currentIndex === questions.length - 1 ? 'Submit Quiz' : 'Next'}
           </Button>
