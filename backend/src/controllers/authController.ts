@@ -18,18 +18,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       return
     }
 
-    const { data: existing } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .single()
-
-    if (existing) {
-      res.status(409).json({ error: 'Email already registered' })
-      return
-    }
-
-    const { data, error } = await supabase.auth.signUp({
+    const { error: signUpError, data } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -37,8 +26,19 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       },
     })
 
-    if (error) throw error
+    if (signUpError) {
+      const status = signUpError.status === 400 || signUpError.status === 409 ? signUpError.status : 400
+      res.status(status).json({ error: signUpError.message })
+      return
+    }
     if (!data.user) throw new Error('User creation failed')
+
+    await supabaseAdmin.from('auth_users').insert({
+      id: data.user.id,
+      email,
+      password_hash: 'managed-by-supabase-auth',
+      full_name,
+    })
 
     await supabaseAdmin.from('profiles').insert({
       id: data.user.id,
@@ -83,7 +83,11 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       password,
     })
 
-    if (error) throw error
+    if (error) {
+      const status = error.status === 400 || error.status === 401 ? 401 : 500
+      res.status(status).json({ error: error.message })
+      return
+    }
     if (!data.user || !data.session) {
       res.status(401).json({ error: 'Invalid email or password' })
       return

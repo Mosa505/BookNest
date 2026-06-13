@@ -21,6 +21,7 @@ import vocabularyRoutes from './routes/vocabularyRoutes'
 import aiRoutes from './routes/aiRoutes'
 import achievementsRoutes from './routes/achievementsRoutes'
 import adminRoutes from './routes/adminRoutes'
+import recommendationRoutes from './routes/recommendationRoutes'
 import {
   sanitizeSQLPatterns,
   validateQueryLength,
@@ -71,6 +72,7 @@ app.use('/api/vocabulary', vocabularyRoutes)
 app.use('/api/reader', aiRoutes)
 app.use('/api/achievements', achievementsRoutes)
 app.use('/api/admin', adminRoutes)
+app.use('/api/recommendations', recommendationRoutes)
 app.use((req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' })
 })
