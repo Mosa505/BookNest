@@ -68,6 +68,9 @@ export const createBook = async (
       author,
       description,
       category,
+      content,
+      age_group,
+      difficulty,
       cover_image_url,
     } = req.body
 
@@ -78,6 +81,18 @@ export const createBook = async (
       return
     }
 
+    const validAgeGroups = ['3-5', '5-8', '8-12']
+    if (age_group && !validAgeGroups.includes(age_group)) {
+      res.status(400).json({ error: 'Age group must be 3-5, 5-8, or 8-12' })
+      return
+    }
+
+    const validDifficulties = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+    if (difficulty && !validDifficulties.includes(difficulty)) {
+      res.status(400).json({ error: 'Invalid difficulty level' })
+      return
+    }
+
     const { data, error } = await supabaseAdmin
       .from('books')
       .insert({
@@ -85,7 +100,9 @@ export const createBook = async (
         author,
         description,
         category: category || null,
-        difficulty: 'B1',
+        content: content || null,
+        age_group: age_group || null,
+        difficulty: difficulty || 'B1',
         total_pages: 100,
         cover_image_url: cover_image_url || null,
         views: 0,
@@ -121,6 +138,8 @@ export const updateBook = async (
       total_pages,
       cover_image_url,
       rating,
+      content,
+      age_group,
     } = req.body
 
     const { data: check } = await supabaseAdmin
@@ -163,6 +182,15 @@ export const updateBook = async (
         return
       }
       updates.rating = rating
+    }
+    if (content !== undefined) updates.content = content
+    if (age_group !== undefined) {
+      const validAgeGroups = ['3-5', '5-8', '8-12']
+      if (!validAgeGroups.includes(age_group)) {
+        res.status(400).json({ error: 'Age group must be 3-5, 5-8, or 8-12' })
+        return
+      }
+      updates.age_group = age_group
     }
 
     const { data, error } = await supabaseAdmin

@@ -9,6 +9,9 @@ import EmptyState from '../../components/ui/EmptyState'
 import Modal from '../../components/ui/Modal'
 import { CefrBadge } from '../../components/ui/Badge'
 import { formatDate } from '../../utils/formatters'
+import { CEFR_LEVELS, CEFR_LABELS } from '../../utils/constants'
+
+const AGE_GROUPS = ['3-5', '5-8', '8-12']
 
 export default function AdminBooks() {
   const [books, setBooks] = useState([])
@@ -18,11 +21,15 @@ export default function AdminBooks() {
   const [saving, setSaving] = useState(false)
   const [pdfFile, setPdfFile] = useState(null)
   const [coverFile, setCoverFile] = useState(null)
+  const [categories, setCategories] = useState([])
   const [form, setForm] = useState({
     title: '',
     author: '',
     description: '',
     category: '',
+    content: '',
+    age_group: '',
+    difficulty: '',
   })
   const { success, error: toastError } = useToast()
 
@@ -38,13 +45,23 @@ export default function AdminBooks() {
     }
   }, [toastError])
 
+  const fetchCategories = useCallback(async () => {
+    try {
+      const data = await booksService.getCategories()
+      setCategories(data || [])
+    } catch {
+      // silent
+    }
+  }, [])
+
   useEffect(() => {
     fetchBooks()
-  }, [fetchBooks])
+    fetchCategories()
+  }, [fetchBooks, fetchCategories])
 
   function openCreate() {
     setEditingBook(null)
-    setForm({ title: '', author: '', description: '', category: '' })
+    setForm({ title: '', author: '', description: '', category: '', content: '', age_group: '', difficulty: '' })
     setPdfFile(null)
     setCoverFile(null)
     setModalOpen(true)
@@ -57,10 +74,17 @@ export default function AdminBooks() {
       author: book.author || '',
       description: book.description || '',
       category: book.category || '',
+      content: book.content || '',
+      age_group: book.age_group || '',
+      difficulty: book.difficulty || '',
     })
     setPdfFile(null)
     setCoverFile(null)
     setModalOpen(true)
+  }
+
+  function handleFormChange(field, value) {
+    setForm((prev) => ({ ...prev, [field]: value }))
   }
 
   async function handleSubmit(e) {
@@ -69,22 +93,49 @@ export default function AdminBooks() {
       toastError('Title, author, and description are required')
       return
     }
-    if (!pdfFile) {
+
+    const isKids = form.category === 'Kids'
+
+    if (isKids && !form.content.trim()) {
+      toastError('Please enter story content for kids books')
+      return
+    }
+
+    if (!isKids && !pdfFile && !editingBook) {
       toastError('Please upload a PDF file')
       return
     }
+
     setSaving(true)
     try {
       let bookId = editingBook?.id
-      if (!editingBook) {
-        const book = await adminService.createBook(form)
-        bookId = book.id
-      } else {
-        await adminService.updateBook(editingBook.id, form)
+      const bookData = {
+        title: form.title,
+        author: form.author,
+        description: form.description,
+        category: form.category || null,
       }
 
-      await adminService.uploadBookContent(bookId, pdfFile)
-      success('PDF uploaded and classified!')
+      if (isKids) {
+        bookData.content = form.content
+        bookData.age_group = form.age_group || null
+      }
+
+      if (form.difficulty) {
+        bookData.difficulty = form.difficulty
+      }
+
+      if (!editingBook) {
+        const book = await adminService.createBook(bookData)
+        bookId = book.id
+      } else {
+        await adminService.updateBook(editingBook.id, bookData)
+      }
+
+      if (pdfFile) {
+        await adminService.uploadBookContent(bookId, pdfFile)
+        success('PDF uploaded and classified!')
+      }
 
       if (coverFile) {
         await adminService.uploadBookCover(bookId, coverFile)
@@ -118,6 +169,8 @@ export default function AdminBooks() {
       </div>
     )
   }
+
+  const isKids = form.category === 'Kids'
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -201,7 +254,7 @@ export default function AdminBooks() {
                <input
                  type="text"
                  value={form.title}
-                 onChange={(e) => setForm({ ...form, title: e.target.value })}
+                 onChange={(e) => handleFormChange('title', e.target.value)}
                  className="input-field"
                  required
                />
@@ -211,7 +264,7 @@ export default function AdminBooks() {
                <input
                  type="text"
                  value={form.author}
-                 onChange={(e) => setForm({ ...form, author: e.target.value })}
+                 onChange={(e) => handleFormChange('author', e.target.value)}
                  className="input-field"
                  required
                />
@@ -221,44 +274,115 @@ export default function AdminBooks() {
              <label className="block text-sm font-medium text-brand-700 mb-1.5">Description *</label>
              <textarea
                value={form.description}
-               onChange={(e) => setForm({ ...form, description: e.target.value })}
+               onChange={(e) => handleFormChange('description', e.target.value)}
                className="input-field resize-none min-h-[80px]"
                required
              />
            </div>
+
+           {/* Category Dropdown */}
            <div>
-             <label className="block text-sm font-medium text-brand-700 mb-1.5">Category</label>
-             <input
-               type="text"
+             <label className="block text-sm font-medium text-brand-700 mb-1.5">Category *</label>
+             <select
                value={form.category}
-               onChange={(e) => setForm({ ...form, category: e.target.value })}
+               onChange={(e) => handleFormChange('category', e.target.value)}
+               className="input-field w-full"
+               required
+             >
+               <option value="">Select a category...</option>
+               {categories.map((cat) => (
+                 <option key={cat.id} value={cat.name}>{cat.name}</option>
+               ))}
+             </select>
+           </div>
+
+           {/* Kids-specific fields */}
+           {isKids && (
+             <>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                 <div>
+                   <label className="block text-sm font-medium text-brand-700 mb-1.5">Age Group</label>
+                   <select
+                     value={form.age_group}
+                     onChange={(e) => handleFormChange('age_group', e.target.value)}
+                     className="input-field w-full"
+                   >
+                     <option value="">Select age group...</option>
+                     {AGE_GROUPS.map((age) => (
+                       <option key={age} value={age}>Ages {age}</option>
+                     ))}
+                   </select>
+                 </div>
+                 <div>
+                   <label className="block text-sm font-medium text-brand-700 mb-1.5">Difficulty Level</label>
+                   <select
+                     value={form.difficulty}
+                     onChange={(e) => handleFormChange('difficulty', e.target.value)}
+                     className="input-field w-full"
+                   >
+                     <option value="">Auto-classify from PDF</option>
+                     {CEFR_LEVELS.map((level) => (
+                       <option key={level} value={level}>{level} - {CEFR_LABELS[level]}</option>
+                     ))}
+                   </select>
+                 </div>
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-brand-700 mb-1.5">Story Content *</label>
+                 <textarea
+                   value={form.content}
+                   onChange={(e) => handleFormChange('content', e.target.value)}
+                   className="input-field resize-none min-h-[200px] font-mono text-sm"
+                   placeholder="Type or paste the story text here..."
+                   required
+                 />
+                 <p className="text-xs text-brand-400 mt-1">This text will be displayed in the kids book reader.</p>
+               </div>
+             </>
+           )}
+
+           {/* PDF Upload - hidden for kids books */}
+           {!isKids && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               <div>
+                 <label className="block text-sm font-medium text-brand-700 mb-1.5">Book PDF *</label>
+                 <input
+                   type="file"
+                   accept=".pdf"
+                   onChange={(e) => setPdfFile(e.target.files[0])}
+                   className="input-field"
+                   required={!editingBook}
+                 />
+                 {pdfFile && <p className="text-xs text-brand-500 mt-1">{pdfFile.name}</p>}
+               </div>
+               <div>
+                 <label className="block text-sm font-medium text-brand-700 mb-1.5">Difficulty Level</label>
+                 <select
+                   value={form.difficulty}
+                   onChange={(e) => handleFormChange('difficulty', e.target.value)}
+                   className="input-field w-full"
+                 >
+                   <option value="">Auto-classify from PDF</option>
+                   {CEFR_LEVELS.map((level) => (
+                     <option key={level} value={level}>{level} - {CEFR_LABELS[level]}</option>
+                   ))}
+                 </select>
+               </div>
+             </div>
+           )}
+
+           {/* Cover Image - always available */}
+           <div>
+             <label className="block text-sm font-medium text-brand-700 mb-1.5">Cover Image</label>
+             <input
+               type="file"
+               accept="image/*"
+               onChange={(e) => setCoverFile(e.target.files[0])}
                className="input-field"
-               placeholder="Fiction"
              />
+             {coverFile && <p className="text-xs text-brand-500 mt-1">{coverFile.name}</p>}
            </div>
-           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-             <div>
-               <label className="block text-sm font-medium text-brand-700 mb-1.5">Book PDF *</label>
-               <input
-                 type="file"
-                 accept=".pdf"
-                 onChange={(e) => setPdfFile(e.target.files[0])}
-                 className="input-field"
-                 required={!editingBook}
-               />
-               {pdfFile && <p className="text-xs text-brand-500 mt-1">{pdfFile.name}</p>}
-             </div>
-             <div>
-               <label className="block text-sm font-medium text-brand-700 mb-1.5">Cover Image</label>
-               <input
-                 type="file"
-                 accept="image/*"
-                 onChange={(e) => setCoverFile(e.target.files[0])}
-                 className="input-field"
-               />
-               {coverFile && <p className="text-xs text-brand-500 mt-1">{coverFile.name}</p>}
-             </div>
-           </div>
+
            <div className="flex gap-3 pt-2">
              <Button type="submit" loading={saving}>{editingBook ? 'Update Book' : 'Create Book'}</Button>
              <Button variant="secondary" onClick={() => setModalOpen(false)}>Cancel</Button>
