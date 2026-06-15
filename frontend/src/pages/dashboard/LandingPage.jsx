@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { booksService } from '../../services/books.service'
+import { profileService } from '../../services/profile.service'
 import BookCard from '../../components/shared/BookCard'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
@@ -10,17 +11,23 @@ import Footer from '../../components/layout/Footer'
 export default function LandingPage() {
   const [trending, setTrending] = useState([])
   const [categories, setCategories] = useState([])
+  const [topReaders, setTopReaders] = useState([])
+  const [popularAuthors, setPopularAuthors] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [trendingData, categoriesData] = await Promise.all([
-          booksService.getTrending(12),
+        const [trendingData, categoriesData, topReadersData, authorsData] = await Promise.all([
+          booksService.getRecommended(12),
           booksService.getCategories(),
+          profileService.getTopReaders(),
+          booksService.getPopularAuthors(),
         ])
         setTrending(trendingData || [])
         setCategories(categoriesData || [])
+        setTopReaders(topReadersData || [])
+        setPopularAuthors(authorsData || [])
       } catch {
         // Fail silently for landing page
       } finally {
@@ -70,7 +77,6 @@ export default function LandingPage() {
   ]
 
   const spotlightBook = trending[0]
-  const topReaders = trending.slice(0, 6)
   const firstRow = trending.slice(0, 6)
   const secondRow = trending.slice(6, 12)
 
@@ -212,14 +218,25 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h3 className="text-lg font-semibold font-heading text-brand-900 mb-6">📚 Top Readers</h3>
             <div className="flex items-center gap-4 overflow-x-auto pb-2">
-              {topReaders.map((_, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 flex-shrink-0">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-300 to-brand-500 flex items-center justify-center text-white text-lg font-bold shadow-md">
-                    {String.fromCharCode(65 + idx)}
+              {topReaders.map((reader, idx) => {
+                const hours = (Math.round((reader.total_site_time_seconds / 3600) * 10) / 10).toFixed(1)
+                const initial = (reader.full_name || 'R').charAt(0).toUpperCase()
+                return (
+                  <div key={reader.id} className="flex flex-col items-center gap-2 flex-shrink-0 group">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-300 to-brand-500 flex items-center justify-center text-white text-lg font-bold shadow-md group-hover:shadow-lg transition-all overflow-hidden">
+                      {reader.avatar_url ? (
+                        <img src={reader.avatar_url} alt={reader.full_name || 'Reader'} className="w-full h-full object-cover" />
+                      ) : (
+                        initial
+                      )}
+                    </div>
+                    <span className="text-xs text-brand-600 font-medium truncate max-w-[80px] text-center">
+                      {reader.full_name || `Reader ${idx + 1}`}
+                    </span>
+                    <span className="text-[10px] text-brand-400 -mt-1">{hours} hrs</span>
                   </div>
-                  <span className="text-xs text-brand-600 font-medium">Reader {idx + 1}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -277,26 +294,28 @@ export default function LandingPage() {
       </section>
 
       {/* Popular Authors */}
-      <section className="py-16 bg-brand-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold font-heading text-brand-900 mb-2">Popular Authors</h2>
-          <p className="text-sm text-brand-500 mb-8">Discover works from our most-read authors</p>
-          <div className="flex items-center gap-6 overflow-x-auto pb-4 scrollbar-thin">
-            {['William Shakespeare', 'Jane Austen', 'Mark Twain', 'Charles Dickens', 'Leo Tolstoy', 'Edgar Allan Poe'].map((author, idx) => (
-              <Link
-                key={idx}
-                to={`/books?search=${encodeURIComponent(author)}`}
-                className="flex flex-col items-center gap-3 flex-shrink-0 group"
-              >
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-200 to-brand-400 flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
-                  {author.charAt(0)}
-                </div>
-                <span className="text-sm text-brand-700 font-medium group-hover:text-brand-900 transition-colors whitespace-nowrap">{author.split(' ').slice(-1)[0]}</span>
-              </Link>
-            ))}
+      {popularAuthors.length > 0 && (
+        <section className="py-16 bg-brand-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold font-heading text-brand-900 mb-2">Popular Authors</h2>
+            <p className="text-sm text-brand-500 mb-8">Discover works from our most-read authors</p>
+            <div className="flex items-center gap-6 overflow-x-auto pb-4 scrollbar-thin">
+              {popularAuthors.map((author, idx) => (
+                <Link
+                  key={idx}
+                  to={`/books?search=${encodeURIComponent(author)}`}
+                  className="flex flex-col items-center gap-3 flex-shrink-0 group"
+                >
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-200 to-brand-400 flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+                    {author.charAt(0)}
+                  </div>
+                  <span className="text-sm text-brand-700 font-medium group-hover:text-brand-900 transition-colors whitespace-nowrap">{author.split(' ').slice(-1)[0]}</span>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Join Our Reading Community */}
       <section className="py-20 bg-brand-900 text-white relative overflow-hidden">

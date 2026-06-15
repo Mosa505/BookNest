@@ -1,18 +1,19 @@
 import { useState, useEffect } from 'react'
-import { useParams, useSearchParams, Link } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import { achievementsService } from '../../services/achievements.service'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 
 export default function QuizResults() {
   const { id } = useParams()
-  const [searchParams] = useSearchParams()
   const [newAchievements, setNewAchievements] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const score = parseFloat(searchParams.get('score') || '0')
-  const total = parseInt(searchParams.get('total') || '0')
+  const raw = sessionStorage.getItem('quizAnswers')
+  const answers = raw ? JSON.parse(raw) : []
+  const score = parseFloat(sessionStorage.getItem('quizScore') || '0')
+  const total = parseInt(sessionStorage.getItem('quizTotal') || '0')
   const passed = score >= 70
 
   async function fetchAchievements() {
@@ -97,20 +98,55 @@ export default function QuizResults() {
             </div>
           </div>
         )}
+      </div>
 
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link to={`/books/${id}`}>
-            <Button>Back to Book</Button>
-          </Link>
-          {!passed && (
-            <Link to={`/books/${id}/quiz`}>
-              <Button variant="secondary">Retry Quiz</Button>
-            </Link>
-          )}
-          <Link to="/books">
-            <Button variant="ghost">Browse More Books</Button>
-          </Link>
+      {answers.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold font-heading text-brand-900 mb-4">Question Review</h2>
+          <div className="space-y-4">
+            {answers.map((item, idx) => (
+              <div
+                key={idx}
+                className={`bg-white rounded-xl border-2 p-6 ${
+                  item.is_correct ? 'border-green-300' : 'border-red-300'
+                }`}
+              >
+                <p className="font-semibold text-brand-900 mb-2">
+                  Q{idx + 1}: {item.question}
+                </p>
+                <div className="space-y-1 text-sm">
+                  <p className={item.is_correct ? 'text-green-700' : 'text-red-700'}>
+                    Your answer: {item.selected_answer}
+                  </p>
+                  {!item.is_correct && (
+                    <p className="text-green-700 font-medium">
+                      Correct answer: {item.correct_answer}
+                    </p>
+                  )}
+                  {item.explanation && (
+                    <div className="mt-2 bg-amber-50 border-l-4 border-amber-400 rounded p-3">
+                      <p className="text-sm text-amber-900">{item.explanation}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
+      )}
+
+      <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <Link to={`/books/${id}`}>
+          <Button>Back to Book</Button>
+        </Link>
+        {!passed && (
+          <Link to={`/books/${id}/quiz`}>
+            <Button variant="secondary">Retry Quiz</Button>
+          </Link>
+        )}
+        <Link to="/books">
+          <Button variant="ghost">Browse More Books</Button>
+        </Link>
       </div>
     </div>
   )

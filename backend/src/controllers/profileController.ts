@@ -173,6 +173,29 @@ export const updateLevel = async (
   }
 }
 
+export const getTopReaders = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('id, full_name, avatar_url, total_site_time_seconds')
+      .order('total_site_time_seconds', { ascending: false })
+      .limit(6)
+
+    if (error) throw error
+
+    res.json({
+      success: true,
+      data: data || [],
+    })
+  } catch (error: any) {
+    console.error('Error fetching top readers:', error)
+    res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+}
+
 export const updateReadingGoal = async (
   req: Request,
   res: Response,

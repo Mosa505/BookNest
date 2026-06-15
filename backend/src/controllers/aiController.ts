@@ -151,7 +151,11 @@ export const classifyLevel = async (
 
     res.json({
       cefrLevel: result.cefrLevel,
-      documentName: pdfFile?.originalname || 'summary-input'
+      documentName: pdfFile?.originalname || 'summary-input',
+      classificationRecord: {
+        documentName: pdfFile?.originalname || 'summary-input',
+        cefrLevel: result.cefrLevel,
+      },
     })
   } catch (error: any) {
     console.error('Error classifying level:', error.message)

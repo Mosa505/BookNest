@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
-import { SupabaseClient, UserResponse } from '@supabase/supabase-js'
+import { UserResponse } from '@supabase/supabase-js'
+import jwt from 'jsonwebtoken'
 import { supabaseAdmin } from '../config/supabase'
 
 declare global {
@@ -14,6 +15,33 @@ declare global {
   }
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || process.env.SUPABASE_JWT_SECRET || ''
+
+interface JwtPayload {
+  sub: string
+  email: string
+  aud?: string
+  role?: string
+  exp?: number
+  iat?: number
+}
+
+const verifyTokenLocally = (token: string): { id: string; email: string } | null => {
+  if (!JWT_SECRET) return null
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET, {
+      algorithms: ['HS256'],
+    }) as JwtPayload
+
+    if (!decoded.sub || !decoded.email) return null
+
+    return { id: decoded.sub, email: decoded.email }
+  } catch {
+    return null
+  }
+}
+
 const retryGetUser = async (token: string, retries = 2, delay = 500): Promise<UserResponse> => {
   for (let i = 0; i <= retries; i++) {
     try {
@@ -24,6 +52,24 @@ const retryGetUser = async (token: string, retries = 2, delay = 500): Promise<Us
     }
   }
   throw new Error('Failed to get user after retries')
+}
+
+const fetchProfile = async (userId: string): Promise<boolean> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', userId)
+      .single()
+    if (error) {
+      console.error('Profile fetch error:', error.message)
+      return false
+    }
+    return data?.is_admin || false
+  } catch (err: any) {
+    console.error('Profile fetch error:', err.message)
+    return false
+  }
 }
 
 export const authenticateJWT = async (
@@ -46,28 +92,34 @@ export const authenticateJWT = async (
   }
 
   try {
-    const result: UserResponse = await retryGetUser(token)
-    const { data, error } = result
+    // Try local JWT verification first (fast, works offline)
+    let userId = ''
+    let userEmail = ''
 
-    if (error || !data.user) {
-      res.status(401).json({ error: 'Invalid or expired token' })
-      return
+    const localUser = verifyTokenLocally(token)
+    if (localUser) {
+      userId = localUser.id
+      userEmail = localUser.email
+    } else {
+      // Fall back to remote Supabase auth verification
+      const result: UserResponse = await retryGetUser(token)
+      const { data, error } = result
+
+      if (error || !data.user) {
+        res.status(401).json({ error: 'Invalid or expired token' })
+        return
+      }
+
+      userId = data.user.id
+      userEmail = data.user.email || ''
     }
 
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from('profiles')
-      .select('is_admin')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profileError) {
-      console.error('Profile fetch error:', profileError.message)
-    }
+    const isAdmin = await fetchProfile(userId)
 
     req.user = {
-      id: data.user.id,
-      email: data.user.email || '',
-      isAdmin: profile?.is_admin || false,
+      id: userId,
+      email: userEmail,
+      isAdmin,
     }
     next()
   } catch (err: any) {

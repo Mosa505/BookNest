@@ -2,26 +2,35 @@ import { Request, Response } from 'express'
 import { supabaseAdmin } from '../config/supabase'
 import multer from 'multer'
 import path from 'path'
-const pdfParse = require('pdf-parse')
+const { PDFParse } = require('pdf-parse')
 import { classifyLevel } from '../services/aiService'
+import * as recommendationService from '../services/recommendationService'
 
-const upload = multer({
+const uploadCoverMulter = multer({
   storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|epub)$/i
-    if (!file.originalname.match(allowed)) {
-      return cb(new Error('Only image, PDF, and EPUB files are allowed'))
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif|webp)$/i)) {
+      return cb(new Error('Cover must be an image (JPG, PNG, GIF, WebP)'))
     }
     cb(null, true)
   },
 })
 
-export const uploadCover = upload.single('cover')
+const uploadContentMulter = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (!file.originalname.match(/\.(pdf|epub)$/i)) {
+      return cb(new Error('Content must be a PDF or EPUB file'))
+    }
+    cb(null, true)
+  },
+})
 
-export const uploadContent = upload.single('content')
+export const uploadCover = uploadCoverMulter.single('cover')
+
+export const uploadContent = uploadContentMulter.single('content')
 
 export const getBooks = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -188,8 +197,19 @@ export const handleUploadContent = async (
 
     if (file.mimetype === 'application/pdf') {
       try {
-        const pdfData = await pdfParse(file.buffer)
-        updates.total_pages = pdfData.numpages || 100
+        const parser = new PDFParse(new Uint8Array(file.buffer))
+        await parser.load()
+
+        let pageCount = 0
+        for (let i = 0; i < 1000; i++) {
+          try {
+            await parser.getPageText(i)
+            pageCount++
+          } catch {
+            break
+          }
+        }
+        updates.total_pages = pageCount || 100
 
         const classification = await classifyLevel({ pdfBuffer: file.buffer })
         if (classification.cefrLevel) {
@@ -252,6 +272,74 @@ export const deleteFile = async (
   } catch (error: any) {
     console.error('Error deleting file:', error)
     res.status(500).json({ error: error.message || 'Failed to delete file' })
+  }
+}
+
+export const getPopularAuthors = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('books')
+      .select('author')
+      .not('author', 'is', null)
+
+    if (error) throw error
+
+    const uniqueAuthors = [...new Set(data?.map(b => b.author).filter(Boolean))].sort()
+
+    res.json({ success: true, data: uniqueAuthors })
+  } catch (error: any) {
+    console.error('Error fetching popular authors:', error)
+    res.status(500).json({ error: error.message || 'Internal server error' })
+  }
+}
+
+export const getRecommended = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  try {
+    const userId = req.user?.id
+    const limit = parseInt(req.query.limit as string) || 12
+    let books: any[] = []
+
+    // Try the Python recommendation service for personalized recs
+    if (userId) {
+      const result = await recommendationService.getRecommendations(userId, limit)
+      const recs = result.recommendations || []
+
+      if (recs.some(r => r.predicted_score != null)) {
+        const bookIds = recs.map(r => r.id).filter(Boolean)
+        if (bookIds.length > 0) {
+          const { data } = await supabaseAdmin
+            .from('books')
+            .select('*')
+            .in('id', bookIds)
+
+          if (data) {
+            const bookMap = new Map(data.map(b => [b.id, b]))
+            books = bookIds.map(id => bookMap.get(id)).filter(Boolean)
+          }
+        }
+      }
+    }
+
+    // Fallback: random books
+    if (books.length === 0) {
+      const { data, error } = await supabaseAdmin.rpc('get_random_books', { limit_count: limit })
+      if (error) throw error
+      books = data || []
+    }
+
+    res.json({
+      success: true,
+      data: books,
+    })
+  } catch (error: any) {
+    console.error('Error fetching recommended books:', error)
+    res.status(500).json({ error: error.message || 'Internal server error' })
   }
 }
 

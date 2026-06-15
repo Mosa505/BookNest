@@ -448,7 +448,10 @@ const response = await fetch(`${PYTHON_SERVICE_URL}/api/recommendations`, {
 ```bash
 # Terminal 1 — Python recommendation service
 cd python-service
+python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
+pip install "numpy<2"       # scikit-surprise C extensions require NumPy 1.x
 uvicorn main:app --reload --port 8000
 
 # Terminal 2 — Express backend
