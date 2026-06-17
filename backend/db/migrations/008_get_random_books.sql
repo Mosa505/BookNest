@@ -5,3 +5,4 @@ LANGUAGE sql
 AS $$
   SELECT * FROM books ORDER BY RANDOM() LIMIT limit_count;
 $$;
+

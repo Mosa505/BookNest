@@ -256,14 +256,5 @@ export const sanitizeSQLPatterns = (
     }
   }
 
-  // Check body parameters
-  for (const [key, value] of Object.entries(req.body || {})) {
-    if (checkString(value as string)) {
-      console.warn(`Potential SQL injection attempt in body: ${key}=${value}`)
-      res.status(400).json({ error: 'Invalid input detected' })
-      return
-    }
-  }
-
   next()
 }

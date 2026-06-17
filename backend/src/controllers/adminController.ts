@@ -259,7 +259,7 @@ export const getAllUsers = async (
 
     const { data, error, count } = await supabaseAdmin
       .from('profiles')
-      .select('id, email, full_name, cefr_level, created_at', { count: 'exact' })
+      .select('id, email, full_name, cefr_level, created_at, is_admin', { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(offsetNum, offsetNum + limitNum - 1)
 
@@ -278,7 +278,7 @@ export const getAllUsers = async (
             .select('id', { count: 'exact', head: true })
             .eq('user_id', profile.id),
         ])
-        return { ...profile, books_completed: booksCompleted || 0, words_learned: wordsLearned || 0 }
+        return { ...profile, isAdmin: profile.is_admin, books_completed: booksCompleted || 0, words_learned: wordsLearned || 0 }
       })
     )
 
