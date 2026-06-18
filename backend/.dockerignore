@@ -1,0 +1,7 @@
+node_modules
+build
+scratch
+docs
+public/uploads
+.git
+.env

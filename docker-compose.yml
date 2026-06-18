@@ -1,0 +1,41 @@
+services:
+
+  python-service:
+    build:
+      context: .
+      dockerfile: python-service/Dockerfile
+    container_name: booknest-recommendation
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - REC_SERVICE_HOST=0.0.0.0
+      - REC_SERVICE_PORT=8000
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: booknest-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - .env
+    environment:
+      - RECOMMENDATION_SERVICE_URL=http://python-service:8000
+    depends_on:
+      - python-service
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: booknest-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
