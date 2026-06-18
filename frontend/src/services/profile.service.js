@@ -16,6 +16,11 @@ export const profileService = {
     return data.data
   },
 
+  async getTopReaders() {
+    const { data } = await api.get('/api/profile/top-readers')
+    return data.data
+  },
+
   async updateGoal({ reading_goal, reading_goal_year }) {
     const { data } = await api.patch('/api/profile/goal', {
       reading_goal,

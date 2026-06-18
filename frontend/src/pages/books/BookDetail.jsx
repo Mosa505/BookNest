@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { booksService } from '../../services/books.service'
 import { progressService } from '../../services/progress.service'
+import { recommendationService } from '../../services/recommendation.service'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
 import EmptyState from '../../components/ui/EmptyState'
+import BookCard from '../../components/shared/BookCard'
 import { CefrBadge } from '../../components/ui/Badge'
 import ProgressBar from '../../components/ui/ProgressBar'
 import { getCompletionPercentage, formatDate } from '../../utils/formatters'
@@ -13,14 +15,19 @@ export default function BookDetail() {
   const { id } = useParams()
   const [book, setBook] = useState(null)
   const [progress, setProgress] = useState(null)
+  const [similarBooks, setSimilarBooks] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const bookData = await booksService.getById(id)
+        const [bookData, similarData] = await Promise.all([
+          booksService.getById(id),
+          recommendationService.getSimilarBooks(id).catch(() => []),
+        ])
         setBook(bookData)
+        setSimilarBooks(similarData || [])
 
         try {
           const progressData = await progressService.getByBook(id)
@@ -164,6 +171,20 @@ export default function BookDetail() {
           </div>
         </div>
       </div>
+
+      {/* Similar Books */}
+      {similarBooks.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-xl font-semibold font-heading text-brand-900 mb-6">
+            📚 Readers Also Enjoyed
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {similarBooks.slice(0, 6).map((similarBook) => (
+              <BookCard key={similarBook.id} book={similarBook} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

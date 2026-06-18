@@ -53,7 +53,10 @@ export default function QuizPage() {
     setSubmitting(true)
     try {
       await readerService.submitQuiz(id, answers, score, totalQuestions)
-      window.location.href = `/books/${id}/quiz/results?score=${score}&total=${totalQuestions}`
+      sessionStorage.setItem('quizAnswers', JSON.stringify(answers))
+      sessionStorage.setItem('quizScore', score)
+      sessionStorage.setItem('quizTotal', totalQuestions)
+      window.location.href = `/books/${id}/quiz/results`
     } catch (err) {
       toastError(err.response?.data?.error || 'Failed to submit quiz')
       setSubmitting(false)

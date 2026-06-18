@@ -15,4 +15,9 @@ export const achievementsService = {
     const { data } = await api.get('/api/achievements', { params: { category: 'Kids' } })
     return data.data || []
   },
+
+  async check(bookId) {
+    const { data } = await api.post(`/api/achievements/check/${bookId}`)
+    return data
+  },
 }

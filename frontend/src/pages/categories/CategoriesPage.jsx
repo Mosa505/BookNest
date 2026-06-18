@@ -165,7 +165,7 @@ export default function CategoriesPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
           {filteredCategories.map((cat, idx) => (
             <Link
-              key={cat.id}
+              key={cat.name}
               to={`/categories?category=${encodeURIComponent(cat.name)}`}
               className={`group relative overflow-hidden rounded-2xl border bg-gradient-to-br ${categoryColors[idx % categoryColors.length]} p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300`}
             >

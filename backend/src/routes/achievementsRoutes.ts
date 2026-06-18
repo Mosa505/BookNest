@@ -11,7 +11,7 @@ const router = Router()
 
 // Public routes - specific routes BEFORE parameterized routes
 router.get('/', getAchievements)
-router.get('/user/achievements', authenticateJWT, getUserAchievements)
+router.get('/user', authenticateJWT, getUserAchievements)
 router.get('/:id', getAchievementById)
 
 // Protected routes

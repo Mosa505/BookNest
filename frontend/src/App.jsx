@@ -15,6 +15,7 @@ import BookDetail from './pages/books/BookDetail'
 import QuizPage from './pages/reader/QuizPage'
 import QuizResults from './pages/reader/QuizResults'
 import ClassifyLevel from './pages/reader/ClassifyLevel'
+import QuizGeneratorPage from './pages/reader/QuizGeneratorPage'
 import BookReaderPage from './pages/reader/BookReaderPage'
 import VocabularyList from './pages/vocabulary/VocabularyList'
 import ProfilePage from './pages/profile/ProfilePage'
@@ -71,6 +72,7 @@ export default function App() {
         <Route path="/books/:id/notes" element={<NotesPage />} />
         <Route path="/vocabulary" element={<VocabularyList />} />
         <Route path="/classify-level" element={<ClassifyLevel />} />
+        <Route path="/quiz-generator" element={<QuizGeneratorPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/categories" element={<CategoriesPage />} />
         <Route path="/learn-language" element={<LearnLanguagePage />} />

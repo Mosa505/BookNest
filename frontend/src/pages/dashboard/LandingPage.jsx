@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { booksService } from '../../services/books.service'
+import { profileService } from '../../services/profile.service'
 import BookCard from '../../components/shared/BookCard'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
@@ -10,17 +11,27 @@ import Footer from '../../components/layout/Footer'
 export default function LandingPage() {
   const [trending, setTrending] = useState([])
   const [categories, setCategories] = useState([])
+  const [topReaders, setTopReaders] = useState([])
+  const [popularAuthors, setPopularAuthors] = useState([])
+  const [topRegularBooks, setTopRegularBooks] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [trendingData, categoriesData] = await Promise.all([
-          booksService.getTrending(12),
+        const [trendingData, categoriesData, topReadersData, authorsData, trendingAllData] = await Promise.all([
+          booksService.getRecommended(12),
           booksService.getCategories(),
+          profileService.getTopReaders(),
+          booksService.getPopularAuthors(),
+          booksService.getTrending(10),
         ])
         setTrending(trendingData || [])
         setCategories(categoriesData || [])
+        setTopReaders(topReadersData || [])
+        setPopularAuthors(authorsData || [])
+        const regularBooks = (trendingAllData || []).filter(b => b.category !== 'Kids').slice(0, 3)
+        setTopRegularBooks(regularBooks)
       } catch {
         // Fail silently for landing page
       } finally {
@@ -70,7 +81,6 @@ export default function LandingPage() {
   ]
 
   const spotlightBook = trending[0]
-  const topReaders = trending.slice(0, 6)
   const firstRow = trending.slice(0, 6)
   const secondRow = trending.slice(6, 12)
 
@@ -104,40 +114,72 @@ export default function LandingPage() {
 
           {/* Book Covers Display */}
           <div className="mt-14 flex justify-center items-end gap-6 md:gap-10">
-            <div className="w-32 md:w-44 aspect-[3/4] rounded-xl overflow-hidden shadow-2xl -rotate-6 transform hover:rotate-0 transition-transform duration-500">
-              <div className="w-full h-full bg-gradient-to-br from-amber-600 to-amber-800 flex items-center justify-center p-4">
-                <span className="text-white text-xl md:text-2xl font-bold font-heading text-center">DAN BROWN</span>
-              </div>
-            </div>
-            <div className="w-36 md:w-52 aspect-[3/4] rounded-xl overflow-hidden shadow-2xl transform hover:scale-105 transition-transform duration-500 z-10">
-              <div className="w-full h-full bg-gradient-to-br from-amber-500 to-amber-700 flex flex-col items-center justify-center p-4 text-center">
-                <span className="text-white text-lg md:text-2xl font-bold font-heading">THE TELL-TALE HEART</span>
-                <span className="text-amber-200 text-xs md:text-sm mt-2">AND OTHER WRITINGS</span>
-                <span className="text-amber-100 text-xs mt-3">EDGAR ALLAN POE</span>
-              </div>
-            </div>
-            <div className="w-32 md:w-44 aspect-[3/4] rounded-xl overflow-hidden shadow-2xl rotate-6 transform hover:rotate-0 transition-transform duration-500">
-              <div className="w-full h-full bg-gradient-to-br from-sky-400 to-teal-500 flex items-center justify-center p-4">
-                <span className="text-white text-lg md:text-xl font-bold font-heading text-center">WHAT END OF PARADISE</span>
-              </div>
-            </div>
+            {trending.slice(0, 3).map((book, idx) => {
+              const rotations = ['-rotate-6', '', 'rotate-6']
+              const hoverEffects = ['hover:rotate-0', 'hover:scale-105', 'hover:rotate-0']
+              const sizes = ['w-32 md:w-44', 'w-36 md:w-52 z-10', 'w-32 md:w-44']
+              const gradients = [
+                'from-amber-600 to-amber-800',
+                'from-amber-500 to-amber-700',
+                'from-sky-400 to-teal-500',
+              ]
+              const coverUrl = book?.cover_image_url || `https://placehold.co/400x600/f5e6d3/8b6f47?text=${encodeURIComponent(book?.title || 'Book')}`
+              return (
+                <Link
+                  key={book.id}
+                  to={`/books/${book.id}`}
+                  className={`${sizes[idx]} aspect-[3/4] rounded-xl overflow-hidden shadow-2xl ${rotations[idx]} transform ${hoverEffects[idx]} transition-transform duration-500`}
+                >
+                  <div className={`w-full h-full bg-gradient-to-br ${gradients[idx]} relative`}>
+                    <img
+                      src={coverUrl}
+                      alt={book.title}
+                      className="w-full h-full object-cover absolute inset-0"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-300 flex items-end p-3">
+                      <span className="text-white text-xs font-medium truncate">{book.title}</span>
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
           </div>
 
-          {/* Stats */}
-          <div className="mt-14 flex flex-col sm:flex-row justify-center items-center gap-8 md:gap-16">
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-brand-900">10k+</p>
-              <p className="text-sm text-brand-500 mt-1">Books Available</p>
+          {/* Top 3 Regular Books */}
+          {topRegularBooks.length > 0 && (
+            <div className="mt-14">
+              <p className="text-center text-xs uppercase tracking-widest text-brand-400 mb-6 font-medium">Top Picks This Week</p>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-6 md:gap-10">
+                {topRegularBooks.map((book, idx) => {
+                  const gradients = [
+                    'from-amber-600 to-amber-800',
+                    'from-amber-500 to-amber-700',
+                    'from-sky-400 to-teal-500',
+                  ]
+                  const rotations = ['-rotate-3', '', 'rotate-3']
+                  return (
+                    <Link
+                      key={book.id}
+                      to={`/books/${book.id}`}
+                      className={`group w-36 md:w-44 aspect-[3/4] rounded-xl overflow-hidden shadow-xl ${rotations[idx]} hover:rotate-0 transition-all duration-500`}
+                    >
+                      <div className={`w-full h-full bg-gradient-to-br ${gradients[idx]} flex flex-col items-center justify-center p-4 text-center`}>
+                        {book.cover_image_url ? (
+                          <img src={book.cover_image_url} alt={book.title} className="w-full h-full object-cover absolute inset-0" />
+                        ) : (
+                          <>
+                            <span className="text-white text-lg md:text-xl font-bold font-heading leading-tight">{book.title}</span>
+                            <span className="text-white/70 text-xs mt-2">{book.author}</span>
+                          </>
+                        )}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-brand-900">1.2k+</p>
-              <p className="text-sm text-brand-500 mt-1">Kids books</p>
-            </div>
-            <div className="text-center">
-              <p className="text-3xl md:text-4xl font-bold text-brand-900">50k+</p>
-              <p className="text-sm text-brand-500 mt-1">Active Readers</p>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -212,14 +254,25 @@ export default function LandingPage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h3 className="text-lg font-semibold font-heading text-brand-900 mb-6">📚 Top Readers</h3>
             <div className="flex items-center gap-4 overflow-x-auto pb-2">
-              {topReaders.map((_, idx) => (
-                <div key={idx} className="flex flex-col items-center gap-2 flex-shrink-0">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-300 to-brand-500 flex items-center justify-center text-white text-lg font-bold shadow-md">
-                    {String.fromCharCode(65 + idx)}
+              {topReaders.map((reader, idx) => {
+                const hours = (Math.round((reader.total_site_time_seconds / 3600) * 10) / 10).toFixed(1)
+                const initial = (reader.full_name || 'R').charAt(0).toUpperCase()
+                return (
+                  <div key={reader.id} className="flex flex-col items-center gap-2 flex-shrink-0 group">
+                    <div className="w-14 h-14 rounded-full bg-gradient-to-br from-brand-300 to-brand-500 flex items-center justify-center text-white text-lg font-bold shadow-md group-hover:shadow-lg transition-all overflow-hidden">
+                      {reader.avatar_url ? (
+                        <img src={reader.avatar_url} alt={reader.full_name || 'Reader'} className="w-full h-full object-cover" />
+                      ) : (
+                        initial
+                      )}
+                    </div>
+                    <span className="text-xs text-brand-600 font-medium truncate max-w-[80px] text-center">
+                      {reader.full_name || `Reader ${idx + 1}`}
+                    </span>
+                    <span className="text-[10px] text-brand-400 -mt-1">{hours} hrs</span>
                   </div>
-                  <span className="text-xs text-brand-600 font-medium">Reader {idx + 1}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         </section>
@@ -277,26 +330,28 @@ export default function LandingPage() {
       </section>
 
       {/* Popular Authors */}
-      <section className="py-16 bg-brand-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold font-heading text-brand-900 mb-2">Popular Authors</h2>
-          <p className="text-sm text-brand-500 mb-8">Discover works from our most-read authors</p>
-          <div className="flex items-center gap-6 overflow-x-auto pb-4 scrollbar-thin">
-            {['William Shakespeare', 'Jane Austen', 'Mark Twain', 'Charles Dickens', 'Leo Tolstoy', 'Edgar Allan Poe'].map((author, idx) => (
-              <Link
-                key={idx}
-                to={`/books?search=${encodeURIComponent(author)}`}
-                className="flex flex-col items-center gap-3 flex-shrink-0 group"
-              >
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-200 to-brand-400 flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
-                  {author.charAt(0)}
-                </div>
-                <span className="text-sm text-brand-700 font-medium group-hover:text-brand-900 transition-colors whitespace-nowrap">{author.split(' ').slice(-1)[0]}</span>
-              </Link>
-            ))}
+      {popularAuthors.length > 0 && (
+        <section className="py-16 bg-brand-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-2xl font-bold font-heading text-brand-900 mb-2">Popular Authors</h2>
+            <p className="text-sm text-brand-500 mb-8">Discover works from our most-read authors</p>
+            <div className="flex items-center gap-6 overflow-x-auto pb-4 scrollbar-thin">
+              {popularAuthors.map((author, idx) => (
+                <Link
+                  key={idx}
+                  to={`/books?search=${encodeURIComponent(author)}`}
+                  className="flex flex-col items-center gap-3 flex-shrink-0 group"
+                >
+                  <div className="w-20 h-20 rounded-full bg-gradient-to-br from-brand-200 to-brand-400 flex items-center justify-center text-white text-2xl font-bold shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+                    {author.charAt(0)}
+                  </div>
+                  <span className="text-sm text-brand-700 font-medium group-hover:text-brand-900 transition-colors whitespace-nowrap">{author.split(' ').slice(-1)[0]}</span>
+                </Link>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Join Our Reading Community */}
       <section className="py-20 bg-brand-900 text-white relative overflow-hidden">

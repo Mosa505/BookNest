@@ -5,6 +5,7 @@ import { profileService } from '../../services/profile.service'
 import { booksService } from '../../services/books.service'
 import { vocabularyService } from '../../services/vocabulary.service'
 import { achievementsService } from '../../services/achievements.service'
+import { recommendationService } from '../../services/recommendation.service'
 import BookCard from '../../components/shared/BookCard'
 import Spinner from '../../components/ui/Spinner'
 import Button from '../../components/ui/Button'
@@ -17,6 +18,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [trending, setTrending] = useState([])
+  const [recommendations, setRecommendations] = useState([])
   const [vocabStats, setVocabStats] = useState(null)
   const [achievements, setAchievements] = useState([])
   const [loading, setLoading] = useState(true)
@@ -24,14 +26,16 @@ export default function Dashboard() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [profileData, trendingData, vocabStatsData, achievementsData] = await Promise.all([
+        const [profileData, trendingData, recoData, vocabStatsData, achievementsData] = await Promise.all([
           profileService.get(),
           booksService.getTrending(8),
+          recommendationService.getForUser(6).catch(() => []),
           vocabularyService.getStats(),
           achievementsService.getUserAchievements(),
         ])
         setProfile(profileData)
         setTrending(trendingData || [])
+        setRecommendations(recoData || [])
         setVocabStats(vocabStatsData)
         setAchievements(achievementsData?.data || [])
       } catch {
@@ -175,6 +179,20 @@ export default function Dashboard() {
                 <span className="text-lg">🏆</span>
                 <span className="text-sm font-medium text-amber-900">{a.achievements?.name || 'Achievement'}</span>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recommended for You */}
+      {recommendations.length > 0 && (
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold font-heading text-brand-900">🎯 Recommended for You</h2>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
+            {recommendations.slice(0, 6).map((book) => (
+              <BookCard key={book.id} book={book} />
             ))}
           </div>
         </div>

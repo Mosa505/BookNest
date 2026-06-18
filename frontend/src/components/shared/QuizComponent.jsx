@@ -33,8 +33,10 @@ export default function QuizComponent({ questions, onSubmit, bookTitle, submitti
   function handleSubmit() {
     const formattedAnswers = questions.map((q, i) => ({
       question: q.question,
+      options: q.options,
       selected_answer: answers[i] || '',
       correct_answer: q.correct_answer,
+      explanation: q.explanation || '',
       is_correct: answers[i] === q.correct_answer,
     }))
 

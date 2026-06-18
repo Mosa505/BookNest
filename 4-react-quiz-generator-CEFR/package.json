@@ -1,0 +1,16 @@
+{
+  "name": "4-vue-quiz-generator",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "npm --prefix ./4-react-quiz-generator run dev",
+    "dev:web": "npm --prefix ./4-react-quiz-generator run dev",
+    "dev:api": "npm --prefix ./4-react-quiz-generator run dev:api",
+    "dev:full": "npm --prefix ./4-react-quiz-generator run dev:full",
+    "build": "npm --prefix ./4-react-quiz-generator run build",
+    "preview": "npm --prefix ./4-react-quiz-generator run preview"
+  },
+  "dependencies": { },
+  "devDependencies": { }
+}

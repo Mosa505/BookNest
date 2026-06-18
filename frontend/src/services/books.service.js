@@ -46,6 +46,16 @@ export const booksService = {
     return data
   },
 
+  async getRecommended(limit = 12) {
+    const { data } = await api.get('/api/books/recommended', { params: { limit } })
+    return data.data
+  },
+
+  async getPopularAuthors() {
+    const { data } = await api.get('/api/books/popular-authors')
+    return data.data
+  },
+
   async getKidsBooks(ageGroup = null) {
     const params = { category: 'Kids', limit: 20 }
     if (ageGroup) {
