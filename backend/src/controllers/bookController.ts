@@ -104,15 +104,20 @@ export const getCategories = async (
 ): Promise<void> => {
   try {
     const { data, error } = await supabaseAdmin
-      .from('categories')
-      .select('*')
-      .order('name', { ascending: true })
+      .from('books')
+      .select('category')
+      .not('category', 'is', null)
+      .order('category', { ascending: true })
 
     if (error) throw error
 
+    const uniqueCategories = [...new Set(data.map(item => item.category))]
+      .filter(Boolean)
+      .map(name => ({ name }))
+
     res.json({
       success: true,
-      data: data || [],
+      data: uniqueCategories,
     })
   } catch (error: any) {
     console.error('Error fetching categories:', error)

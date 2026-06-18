@@ -18,10 +18,10 @@ const router = Router()
 
 // Book routes - specific routes BEFORE parameterized routes
 router.get('/', authenticateJWT, getBooks)
-router.get('/trending', authenticateJWT, getTrending)
-router.get('/recommended', authenticateJWT, getRecommended)
-router.get('/popular-authors', authenticateJWT, getPopularAuthors)
-router.get('/categories', authenticateJWT, getCategories)
+router.get('/trending', getTrending)
+router.get('/recommended', getRecommended)
+router.get('/popular-authors', getPopularAuthors)
+router.get('/categories', getCategories)
 router.get('/:id', authenticateJWT, getBookById)
 
 // File upload routes

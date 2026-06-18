@@ -16,6 +16,6 @@ router.get('/', authenticateJWT, getProfile)
 router.patch('/', authenticateJWT, validateContentLength, updateProfile)
 router.patch('/level', authenticateJWT, updateLevel)
 router.patch('/goal', authenticateJWT, validateContentLength, updateReadingGoal)
-router.get('/top-readers', authenticateJWT, getTopReaders)
+router.get('/top-readers', getTopReaders)
 
 export default router
